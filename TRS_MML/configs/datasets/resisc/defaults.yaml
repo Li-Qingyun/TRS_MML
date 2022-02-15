@@ -4,22 +4,14 @@ dataset_config:
     data_dir: ${env.data_dir}/datasets
     images:
       train:
-      - DIOR/JPEGImages-trainval
+      - NWPU-RESISC45/train
       val:
-      - DIOR/JPEGImages-trainval
+      - NWPU-RESISC45/val
       test:
-      - DIOR/JPEGImages-test
-    annotations:
-      train:
-      - DIOR/coco_ann/DIOR_train_coco.json
-      val:
-      - DIOR/coco_ann/DIOR_val_coco.json
-      test:
-      - DIOR/coco_ann/DIOR_test_coco.json
-    load_attributes: false  # COCO has no attribute annotations
+      - NWPU-RESISC45/test
     processors:
-      detection_image_and_target_processor:
-        type: detr_image_and_target
+      classification_RSI_processor:     # TODO: develop processors
+        type: optical_RSI
         params:
           train_image_sizes: [480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800]
           train_resize_random_sizes: [400, 500, 600]
