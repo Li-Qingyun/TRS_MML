@@ -1,0 +1,29 @@
+dataset_config:
+  resisc45:
+    use_images: true
+    data_dir: ${env.data_dir}/datasets
+    images:
+      train:
+      - DIOR/JPEGImages-trainval
+      val:
+      - DIOR/JPEGImages-trainval
+      test:
+      - DIOR/JPEGImages-test
+    annotations:
+      train:
+      - DIOR/coco_ann/DIOR_train_coco.json
+      val:
+      - DIOR/coco_ann/DIOR_val_coco.json
+      test:
+      - DIOR/coco_ann/DIOR_test_coco.json
+    load_attributes: false  # COCO has no attribute annotations
+    processors:
+      detection_image_and_target_processor:
+        type: detr_image_and_target
+        params:
+          train_image_sizes: [480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800]
+          train_resize_random_sizes: [400, 500, 600]
+          train_crop_size: [384, 600]
+          test_image_size: 800
+          max_size: 640  # 1333
+    max_target_enc_size: 65533  # 16382  # maximum number of bytes to encode detection targets into pickle  # ???
