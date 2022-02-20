@@ -79,3 +79,4 @@ class RSDetectionMeanAP(BaseMetric):
         if execute_on_master_only:
             mAP = broadcast_tensor(mAP, src=0)
         return mAP
+

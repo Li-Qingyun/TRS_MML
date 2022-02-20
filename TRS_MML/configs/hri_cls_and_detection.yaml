@@ -2,9 +2,12 @@ model_config:
   trs:
     base_args:
       num_queries:
+        detection:
+          dior: 300
         hri_cls:
-          resisc: 100  # TODO: make decision
-      share_decoders: false
+          resisc: 100
+          aid: 100  # TODO: make decision
+      share_decoders: true
       decoder_hidden_dim: 768
       dilation: true
       use_task_embedding_in_img_encoder: true
@@ -19,22 +22,26 @@ model_config:
 
 evaluation:
   metrics:
+  - type: mAP@0.5
+    key: mAP@0.5
+    datasets:
+    - dior
+    params:
+      dataset_json_files:
+        dior:
+          val: ${env.data_dir}/datasets/DIOR/coco_ann/DIOR_val_coco.json
+          test: ${env.data_dir}/datasets/DIOR/coco_ann/DIOR_test_coco.json
   - type: accuracy
     key: accuracy
     datasets:
     - resisc
-#    params:
-#      dataset_json_files:
-#        dior:
-#          val: ${env.data_dir}/datasets/DIOR/coco_ann/DIOR_val_coco.json
-#          test: ${env.data_dir}/datasets/DIOR/coco_ann/DIOR_test_coco.json
-
+    - aid
 
 optimizer:
   type: adam_w  # HuggingFace transformer's AdamW
   params:
-    lr: 1e-6
-#    lr: 1e-5
+#    lr: 1e-6
+    lr: 1e-5
     eps: 1e-8
     weight_decay: 1e-4
 
@@ -53,13 +60,13 @@ training:
   lr_scheduler: true
   lr_ratio: 0.1
   batch_size: 64
-  max_updates: 1800000
+  max_updates: 1000000
   checkpoint_interval: 10000
-  evaluation_interval: 1000
+  evaluation_interval: 10000
   dataset_size_proportional_sampling: false
   early_stop:
     enabled: false
-    criteria: resisc/accuracy
+    criteria: dior/mAP@0.5
     minimize: false
   stdout_capture: false
   find_unused_parameters: true

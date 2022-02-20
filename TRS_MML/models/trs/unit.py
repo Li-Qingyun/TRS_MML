@@ -141,6 +141,7 @@ class UniT(BaseModel):
         self.loss_calculation_fn["detection"] = self.detection_loss_calculation
         self.loss_calculation_fn["vl"] = self.classifier_loss_calculation       # TODO: Delete VL loss
         self.loss_calculation_fn["glue"] = self.classifier_loss_calculation     # TODO: Delete GLUE loss
+        self.loss_calculation_fn["hri_cls"] = self.classifier_loss_calculation
 
         self.losses_dict = {}
         self.losses_dict["vl"] = {
@@ -150,6 +151,10 @@ class UniT(BaseModel):
         self.losses_dict["glue"] = {
             name: self.get_loss_fn(self.config.heads["glue"][name]["loss_type"])
             for name in self.config.heads.get('glue', {})  # self.config.heads["glue"]
+        }
+        self.losses_dict["hri_cls"] = {
+            name: self.get_loss_fn(self.config.heads["hri_cls"][name]["loss_type"])
+            for name in self.config.heads.get('hri_cls', {})
         }
 
     def forward_bert_with_task_idx(self, sample_list):
@@ -223,6 +228,8 @@ class UniT(BaseModel):
                 text_pos = text_pos[0:1, :]
                 text_mask = text_mask[:, 0:1]
         elif task_type == "detection":
+            img_src = sample_list.image
+        elif task_type == "hri_cls":
             img_src = sample_list.image
 
         detr_outputs = self.unit_base_model(
@@ -365,6 +372,8 @@ class UniT(BaseModel):
             task_type = "vl"
         elif dataset_name in self.config.heads.get('glue', {}):  # self.config.heads["glue"]
             task_type = "glue"
+        elif dataset_name in self.config.heads.get('hri_cls', {}):
+            task_type = "hri_cls"
         return task_type
 
     def get_loss_fn(self, loss_type):

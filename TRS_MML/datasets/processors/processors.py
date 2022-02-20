@@ -1,7 +1,7 @@
 from mmf.common.constants import IMAGE_COLOR_MEAN, IMAGE_COLOR_STD
 from mmf.common.registry import registry
 from mmf.datasets.processors import BaseProcessor
-from mmf.datasets.processors import detection_transforms as T
+import torchvision.transforms as T
 
 @registry.register_processor("optical_RSI")
 class OpticalRSIProcessor(BaseProcessor):
@@ -13,28 +13,18 @@ class OpticalRSIProcessor(BaseProcessor):
     def __init__(self, config, *args, **kwargs):
         super().__init__(config, *args, **kwargs)
 
-        train_image_sizes = list(config.train_image_sizes)
         self.training_transform = T.Compose(
             [
                 T.RandomHorizontalFlip(),
-                T.RandomSelect(
-                    T.RandomResize(train_image_sizes, max_size=config.max_size),
-                    T.Compose(
-                        [
-                            T.RandomResize(list(config.train_resize_random_sizes)),
-                            T.RandomSizeCrop(*config.train_crop_size),
-                            T.RandomResize(train_image_sizes, max_size=config.max_size),
-                        ]
-                    ),
-                ),
                 T.ToTensor(),
+                # T.Resize((224, 224)),
                 T.Normalize(IMAGE_COLOR_MEAN, IMAGE_COLOR_STD),
             ]
         )
         self.inference_transform = T.Compose(
             [
-                T.RandomResize([config.test_image_size], max_size=config.max_size),
                 T.ToTensor(),
+                # T.Resize((224, 224)),
                 T.Normalize(IMAGE_COLOR_MEAN, IMAGE_COLOR_STD),
             ]
         )

@@ -1,20 +1,20 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from .dataset import RESISCDataset
+from .dataset import AIDDataset
 from mmf.common.registry import registry
 from mmf.datasets.concat_dataset import MMFConcatDataset
 from mmf.datasets.mmf_dataset_builder import MMFDatasetBuilder
 
 
-@registry.register_builder("resisc")
-class RESISCBuilder(MMFDatasetBuilder):
+@registry.register_builder("aid")
+class AIDBuilder(MMFDatasetBuilder):
     def __init__(self):
         super().__init__(
-            dataset_name="resisc", dataset_class=RESISCDataset
+            dataset_name="aid", dataset_class=AIDDataset
         )
 
     @classmethod
     def config_path(cls):
-        return "TRS_MML/configs/datasets/resisc/defaults.yaml"
+        return "TRS_MML/configs/datasets/aid/defaults.yaml"
 
     def load(self, config, dataset_type, *args, **kwargs):
         self.config = config

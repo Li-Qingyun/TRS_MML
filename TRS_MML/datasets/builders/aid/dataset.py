@@ -6,14 +6,14 @@ from mmf.common.sample import Sample, SampleList
 from mmf.datasets.base_dataset import BaseDataset
 
 
-class RESISCDataset(BaseDataset):
+class AIDDataset(BaseDataset):
     def __init__(self, config, dataset_type, imdb_file_index, *args, **kwargs):
         if "name" in kwargs:
             name = kwargs["name"]
         elif "dataset_name" in kwargs:
             name = kwargs["dataset_name"]
         else:
-            name = "resisc"
+            name = "aid"
         super().__init__(name, config, dataset_type, *args, **kwargs)
         self.dataset_name = name
 

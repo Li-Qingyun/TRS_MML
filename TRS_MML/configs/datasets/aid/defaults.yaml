@@ -1,14 +1,14 @@
 dataset_config:
-  resisc:
+  aid:
     use_images: true
     data_dir: ${env.data_dir}/datasets
     images:
       train:
-      - NWPU-RESISC45/train
+      - AID/train
       val:
-      - NWPU-RESISC45/val
+      - AID/val
       test:
-      - NWPU-RESISC45/test
+      - AID/test
     processors:
       classification_RSI_processor:     # TODO: develop processors
         type: optical_RSI

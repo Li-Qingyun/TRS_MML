@@ -3,7 +3,7 @@ model_config:
     base_args:
       num_queries:
         hri_cls:
-          resisc: 100  # TODO: make decision
+          aid: 100  # TODO: make decision
       share_decoders: false
       decoder_hidden_dim: 768
       dilation: true
@@ -22,7 +22,7 @@ evaluation:
   - type: accuracy
     key: accuracy
     datasets:
-    - resisc
+    - aid
 #    params:
 #      dataset_json_files:
 #        dior:
@@ -59,7 +59,7 @@ training:
   dataset_size_proportional_sampling: false
   early_stop:
     enabled: false
-    criteria: resisc/accuracy
+    criteria: aid/accuracy
     minimize: false
   stdout_capture: false
   find_unused_parameters: true

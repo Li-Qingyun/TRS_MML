@@ -3,8 +3,9 @@ model_config:
     base_args:
       num_queries:
         hri_cls:
-          resisc: 100  # TODO: make decision
-      share_decoders: false
+          resisc: 100
+          aid: 100  # TODO: make decision
+      share_decoders: true
       decoder_hidden_dim: 768
       dilation: true
       use_task_embedding_in_img_encoder: true
@@ -23,6 +24,7 @@ evaluation:
     key: accuracy
     datasets:
     - resisc
+    - aid
 #    params:
 #      dataset_json_files:
 #        dior:
@@ -33,8 +35,8 @@ evaluation:
 optimizer:
   type: adam_w  # HuggingFace transformer's AdamW
   params:
-    lr: 1e-6
-#    lr: 1e-5
+#    lr: 1e-6
+    lr: 1e-5
     eps: 1e-8
     weight_decay: 1e-4
 
@@ -53,7 +55,7 @@ training:
   lr_scheduler: true
   lr_ratio: 0.1
   batch_size: 64
-  max_updates: 1800000
+  max_updates: 200000
   checkpoint_interval: 10000
   evaluation_interval: 1000
   dataset_size_proportional_sampling: false

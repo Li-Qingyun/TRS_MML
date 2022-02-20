@@ -62,6 +62,15 @@ model_config:
           task_idx: 0
           num_classes: 20
           use_attr: false
+      hri_cls:
+        resisc:
+          task_idx: 1
+          num_labels: 45
+          loss_type: cross_entropy
+        aid:
+          task_idx: 2
+          num_labels: 30
+          loss_type: cross_entropy
 
     max_task_num: 256
     predict_attributes: false

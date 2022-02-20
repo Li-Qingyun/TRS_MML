@@ -5,13 +5,15 @@ Author: Qingyun Li
 
 
 __all__ = [
-    "dior",
+    "dior", "resisc", "aid",
+    "OpticalRSIProcessor",
     "trs",
     "WarmupConstantScheduler",
     "RSDetectionMeanAP",
 ]
 
-from .datasets.builders import dior
+from .datasets.builders import dior, resisc, aid
+from .datasets.processors import OpticalRSIProcessor
 from .models import trs
 from .modules.schedulers import WarmupConstantScheduler
 from .modules.metrics import RSDetectionMeanAP
