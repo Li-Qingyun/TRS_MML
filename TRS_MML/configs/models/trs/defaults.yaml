@@ -71,6 +71,17 @@ model_config:
           task_idx: 2
           num_labels: 30
           loss_type: cross_entropy
+      hsi_cls:
+        indian:
+          task_idx: 3
+          num_labels: 16
+          num_channels: 200
+          loss_type: cross_entropy
+        ksc:
+          task_idx: 3
+          num_labels: 16
+          num_channels: 176
+          loss_type: cross_entropy
 
     max_task_num: 256
     predict_attributes: false

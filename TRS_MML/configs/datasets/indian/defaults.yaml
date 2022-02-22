@@ -1,0 +1,28 @@
+dataset_config:
+  indian:
+    use_images: true
+    data_dir: ${env.data_dir}/datasets
+    images:
+      train:
+        - Indian_pines/Indian_pines_corrected_train.npy
+      val:
+        - Indian_pines/Indian_pines_corrected_test.npy
+      test:
+        - Indian_pines/Indian_pines_corrected_test.npy
+    annotations:
+      train:
+        - Indian_pines/Indian_pines_gt_train.npy
+      val:
+        - Indian_pines/Indian_pines_gt_test.npy
+      test:
+        - Indian_pines/Indian_pines_gt_test.npy
+    processors:
+      classification_RSI_processor:     # TODO: develop processors
+        type: HSI
+#        params:
+#          train_image_sizes: [480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800]
+#          train_resize_random_sizes: [400, 500, 600]
+#          train_crop_size: [384, 600]
+#          test_image_size: 800
+#          max_size: 640  # 1333
+    max_target_enc_size: 65533  # 16382  # maximum number of bytes to encode detection targets into pickle  # ???

@@ -5,8 +5,9 @@ Author: Qingyun Li
 
 
 __all__ = [
-    "OpticalRSIProcessor"
+    "OpticalRSIProcessor",
+    "HSIProcessor"
 ]
 
-from .processors import OpticalRSIProcessor
+from .processors import OpticalRSIProcessor, HSIProcessor
 
