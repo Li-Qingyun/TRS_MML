@@ -16,7 +16,8 @@ from torch import Tensor, nn
 
 
 class UniTBaseModel(nn.Module):
-    def __init__(self, args):
+    def __init__(self, config):
+        args = config.base_args
         super().__init__()
 
         self.num_queries = args.num_queries
@@ -38,6 +39,15 @@ class UniTBaseModel(nn.Module):
             self.backbone.num_channels, encoder_hidden_dim, kernel_size=1
         )
 
+        # build the hsi linear projection
+        hsi_lin_proj = nn.ModuleDict()
+        for dataset_name in args.num_queries.get("hsi_cls", []):
+            hsi_lin_proj[dataset_name] = nn.Conv2d(
+                in_channels=config.heads["hsi_cls"][dataset_name]["num_channels"],
+                out_channels=3, kernel_size=1,
+            )
+        self.hsi_lin_proj = hsi_lin_proj
+
     def forward(
         self,
         img_src: Tensor,
@@ -54,6 +64,10 @@ class UniTBaseModel(nn.Module):
         if img_src is not None:
             if not isinstance(img_src, NestedTensor):
                 img_src = NestedTensor.from_tensor_list(img_src)
+
+            if task_type == 'hsi_cls':
+                img_src.tensors = self.hsi_lin_proj[dataset_name](img_src.tensors)
+
             features, img_pos = self.backbone(img_src)
 
             img_src, img_mask = features[-1].decompose()

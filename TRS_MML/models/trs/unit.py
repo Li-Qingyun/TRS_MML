@@ -7,7 +7,7 @@ from typing import Dict
 import torch
 from mmf.common.registry import registry
 from mmf.models import BaseModel
-from mmf.models.unit.unit_base_model import (
+from .unit_base_model import (
     MLP,
     AttributeHead,
     UniTBaseModel,
@@ -39,7 +39,7 @@ class UniT(BaseModel):
 
     def build(self):
         # build the base model (based on DETR)
-        self.unit_base_model = UniTBaseModel(self.config.base_args)
+        self.unit_base_model = UniTBaseModel(self.config)
 
         def keep_only_backbone_params(model_state_dict):
             keys = list(model_state_dict.keys())
@@ -112,6 +112,18 @@ class UniT(BaseModel):
 
         self.classifiers["hri_cls"] = hri_classifiers
 
+        hsi_classifiers = nn.ModuleDict()
+        for dataset_name in self.config.base_args.num_queries.get("hsi_cls", []):
+            hsi_classifiers[dataset_name] = nn.Sequential(
+                BertPredictionHeadTransform(bert_config),  # TODO: Change
+                nn.Linear(
+                    bert_config.hidden_size,
+                    self.config.heads["hsi_cls"][dataset_name]["num_labels"],
+                ),
+            )
+
+        self.classifiers["hsi_cls"] = hsi_classifiers
+
         vl_classifiers = nn.ModuleDict()                                        # TODO: Delete VL Head (start)
         for dataset_name in self.config.base_args.num_queries.get("vl", []):
             vl_classifiers[dataset_name] = nn.Sequential(
@@ -142,6 +154,7 @@ class UniT(BaseModel):
         self.loss_calculation_fn["vl"] = self.classifier_loss_calculation       # TODO: Delete VL loss
         self.loss_calculation_fn["glue"] = self.classifier_loss_calculation     # TODO: Delete GLUE loss
         self.loss_calculation_fn["hri_cls"] = self.classifier_loss_calculation
+        self.loss_calculation_fn["hsi_cls"] = self.classifier_loss_calculation
 
         self.losses_dict = {}
         self.losses_dict["vl"] = {
@@ -155,6 +168,10 @@ class UniT(BaseModel):
         self.losses_dict["hri_cls"] = {
             name: self.get_loss_fn(self.config.heads["hri_cls"][name]["loss_type"])
             for name in self.config.heads.get('hri_cls', {})
+        }
+        self.losses_dict["hsi_cls"] = {
+            name: self.get_loss_fn(self.config.heads["hsi_cls"][name]["loss_type"])
+            for name in self.config.heads.get('hsi_cls', {})
         }
 
     def forward_bert_with_task_idx(self, sample_list):
@@ -227,9 +244,7 @@ class UniT(BaseModel):
                 text_src = text_src[:, 0:1, :]
                 text_pos = text_pos[0:1, :]
                 text_mask = text_mask[:, 0:1]
-        elif task_type == "detection":
-            img_src = sample_list.image
-        elif task_type == "hri_cls":
+        elif task_type in ["detection", "hri_cls", "hsi_cls"]:
             img_src = sample_list.image
 
         detr_outputs = self.unit_base_model(
@@ -359,6 +374,7 @@ class UniT(BaseModel):
             {"params": self.bbox_embeds.parameters()},
             {"params": self.det_losses.parameters()},
         ]
+
         return vqa_params + detr_params
 
     def get_task_idx(self, dataset_name):
@@ -374,6 +390,8 @@ class UniT(BaseModel):
             task_type = "glue"
         elif dataset_name in self.config.heads.get('hri_cls', {}):
             task_type = "hri_cls"
+        elif dataset_name in self.config.heads.get('hsi_cls', {}):
+            task_type = "hsi_cls"
         return task_type
 
     def get_loss_fn(self, loss_type):
