@@ -53,8 +53,7 @@ model_config:
       # Visual Genome attribute data properties
       attribute_class_num: 401
       max_attribute_num: 16
-      bert_config:
-        bert_model_name: bert-base-uncased
+      dropout_config: 0.1
 
     heads:
       detection:
@@ -78,9 +77,14 @@ model_config:
           num_channels: 200
           loss_type: cross_entropy
         ksc:
-          task_idx: 3
+          task_idx: 4
           num_labels: 16
           num_channels: 176
+          loss_type: cross_entropy
+        pavia:
+          task_idx: 5
+          num_labels: 9
+          num_channels: 103
           loss_type: cross_entropy
 
     max_task_num: 256

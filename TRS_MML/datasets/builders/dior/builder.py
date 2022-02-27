@@ -13,4 +13,4 @@ class DIORBuilder(MMFDatasetBuilder):
 
     @classmethod
     def config_path(cls):
-        return "TRS_MML/configs/datasets/dior/defaults.yaml"
+        return "TRS_MML/configs/base/datasets/dior/defaults.yaml"

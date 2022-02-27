@@ -3,15 +3,13 @@ model_config:
     base_args:
       num_queries:
         hsi_cls:
-          indian: 100  # TODO: make decision
+          indian: 100  # TODO: Ablation EXP
       share_decoders: false
-      decoder_hidden_dim: 768
-      dilation: true
+      decoder_hidden_dim: 768  # TODO: Ablation EXP
+      dilation: true  # TODO: Ablation EXP
       use_task_embedding_in_img_encoder: true
       use_task_embedding_in_lang_encoder: true
-#      lr_backbone: 2e-8
-      lr_backbone: 2e-7
-#      lr_backbone: 2e-6
+      lr_backbone: 2e-6  # TODO: Ablation EXP
     losses:
     - logit_bce
     # initialize the ResNet convnet backbone from DETR
@@ -24,19 +22,11 @@ evaluation:
     key: accuracy
     datasets:
     - indian
-#    params:
-#      dataset_json_files:
-#        dior:
-#          val: ${env.data_dir}/datasets/DIOR/coco_ann/DIOR_val_coco.json
-#          test: ${env.data_dir}/datasets/DIOR/coco_ann/DIOR_test_coco.json
-
 
 optimizer:
-  type: adam_w  # HuggingFace transformer's AdamW
+  type: adam_w  # HuggingFace transformer's AdamW  # TODO: Ablation EXP
   params:
-    lr: 1e-7
-#    lr: 1e-6
-#    lr: 1e-5
+    lr: 1e-5  # TODO: Ablation EXP
     eps: 1e-8
     weight_decay: 1e-4
 
@@ -44,19 +34,18 @@ scheduler:
   type: warmup_constant
   params:
     num_warmup_steps: 2000
-#    num_training_steps: ${training.max_updates}
 
 training:
   num_workers: 2
-  # these are mostly the same as in COCO detection training
   clip_norm_mode: all
   clip_gradients: true
   max_grad_l2_norm: 0.1
   lr_scheduler: true
   lr_ratio: 0.1
   batch_size: 64
-  max_updates: 70000
-  checkpoint_interval: 1000
+  max_updates: 50000
+  log_interval: 100
+  checkpoint_interval: 10000
   evaluation_interval: 1000
   dataset_size_proportional_sampling: false
   early_stop:

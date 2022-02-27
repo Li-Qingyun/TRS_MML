@@ -14,7 +14,7 @@ class RESISCBuilder(MMFDatasetBuilder):
 
     @classmethod
     def config_path(cls):
-        return "TRS_MML/configs/datasets/resisc/defaults.yaml"
+        return "TRS_MML/configs/base/datasets/resisc/defaults.yaml"
 
     def load(self, config, dataset_type, *args, **kwargs):
         self.config = config

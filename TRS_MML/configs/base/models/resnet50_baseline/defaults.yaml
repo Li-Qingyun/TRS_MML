@@ -1,0 +1,49 @@
+model_config:
+  resnet50:
+    loss_on_all_hs: false
+    base_args:
+      pretrained: false
+      dropout_config: 0.1
+      task_datasets:
+        hsi_cls:
+        - indian
+        - ksc
+        - pavia
+        hri_cls:
+        - resisc
+        - aid
+
+    heads:
+#      detection:
+#        dior:
+#          task_idx: 0
+#          num_classes: 20
+#          use_attr: false
+      hri_cls:
+        resisc:
+          task_idx: 1
+          num_labels: 45
+          loss_type: cross_entropy
+        aid:
+          task_idx: 2
+          num_labels: 30
+          loss_type: cross_entropy
+      hsi_cls:
+        indian:
+          task_idx: 3
+          num_labels: 16
+          num_channels: 200
+          loss_type: cross_entropy
+        ksc:
+          task_idx: 4
+          num_labels: 16
+          num_channels: 176
+          loss_type: cross_entropy
+        pavia:
+          task_idx: 5
+          num_labels: 9
+          num_channels: 103
+          loss_type: cross_entropy
+
+    max_task_num: 256
+    predict_attributes: false

@@ -14,7 +14,7 @@ class KSCBuilder(MMFDatasetBuilder):
 
     @classmethod
     def config_path(cls):
-        return "TRS_MML/configs/datasets/ksc/defaults.yaml"
+        return "TRS_MML/configs/base/datasets/ksc/defaults.yaml"
 
     def load(self, config, dataset_type, *args, **kwargs):
         self.config = config

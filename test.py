@@ -1,5 +1,10 @@
-#!/usr/bin/env python3 -u
-# Copyright (c) Facebook, Inc. and its affiliates.
+"""
+Date: 2022.02.25
+Author: Qingyun Li
+
+NOTICE: The script is designed for single gpu testing.
+"""
+
 import argparse
 import logging
 import random
@@ -21,8 +26,9 @@ import TRS_MML
 setup_very_basic_config()
 
 
-def main(configuration, init_distributed=False, predict=False):
+def configure(configuration, init_distributed=False, predict=False):
     # A reload might be needed for imports
+
     setup_imports()
     configuration.import_user_dir()
     config = configuration.get_config()
@@ -52,20 +58,11 @@ def main(configuration, init_distributed=False, predict=False):
 
     trainer = build_trainer(config)
     trainer.load()
-    if predict:
-        trainer.inference()
-    else:
-        trainer.train()
 
-
-def distributed_main(device_id, configuration, predict=False):
-    config = configuration.get_config()
-    config.device_id = device_id
-
-    if config.distributed.rank is None:
-        config.distributed.rank = config.start_rank + device_id
-
-    main(configuration, init_distributed=True, predict=predict)
+    return {
+        'configuration': configuration,
+        'trainer': trainer
+    }
 
 
 def run(opts: typing.Optional[typing.List[str]] = None, predict: bool = False):
@@ -95,45 +92,20 @@ def run(opts: typing.Optional[typing.List[str]] = None, predict: bool = False):
     configuration.args = args
     config = configuration.get_config()
     config.start_rank = 0
-    if config.distributed.init_method is None:
-        infer_init_method(config)
 
-    if config.distributed.init_method is not None:
-        if torch.cuda.device_count() > 1 and not config.distributed.no_spawn:
-            config.start_rank = config.distributed.rank
-            config.distributed.rank = None
-            torch.multiprocessing.spawn(
-                fn=distributed_main,
-                args=(configuration, predict),
-                nprocs=torch.cuda.device_count(),
-            )
-        else:
-            distributed_main(0, configuration, predict)
-    elif config.distributed.world_size > 1:
-        if is_xla():
-            import torch_xla.distributed.xla_multiprocessing as xmp
-
-            torch.multiprocessing.set_sharing_strategy("file_system")
-            xmp.spawn(
-                fn=distributed_main,
-                args=(configuration, predict),
-                nprocs=8,  # use all 8 TPU cores
-                start_method="fork",
-            )
-        else:
-            assert config.distributed.world_size <= torch.cuda.device_count()
-            port = random.randint(10000, 20000)
-            config.distributed.init_method = f"tcp://localhost:{port}"
-            config.distributed.rank = None
-            torch.multiprocessing.spawn(
-                fn=distributed_main,
-                args=(configuration, predict),
-                nprocs=config.distributed.world_size,
-            )
-    else:
-        config.device_id = 0
-        main(configuration, predict=predict)
+    config.device_id = 0
+    return configure(configuration, predict=predict)
 
 
 if __name__ == "__main__":
-    run()
+    trainer = run()['trainer']
+    model = trainer.model
+
+    trainer.train_loader.__iter__()
+    input = trainer.train_loader.__next__()
+
+    from fvcore.nn import FlopCountAnalysis, flop_count_table
+    flops = FlopCountAnalysis(model, input)
+    flops.total()
+
+    print(flop_count_table(flops, max_depth=2, activations=None, show_param_shapes=False))

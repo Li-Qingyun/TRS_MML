@@ -14,7 +14,7 @@ class IndianBuilder(MMFDatasetBuilder):
 
     @classmethod
     def config_path(cls):
-        return "TRS_MML/configs/datasets/indian/defaults.yaml"
+        return "TRS_MML/configs/base/datasets/indian/defaults.yaml"
 
     def load(self, config, dataset_type, *args, **kwargs):
         self.config = config

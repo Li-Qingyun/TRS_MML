@@ -8,19 +8,23 @@ if __name__ == '__main__':
 
     nTrain = 200
     nValidate = 50
-    dataset_name = 'KSC'
+    dataset_name = 'Pavia'  # TODO
+
+    # TODO
     # hsi_path = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\Indian_pines_corrected.mat"
     # gt_path = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\Indian_pines_gt.mat"
-    hsi_path = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\Kennedy_denoise.mat"
-    gt_path = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\KSC_gt.mat"
-    # hsi_path = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\Indian_pines_corrected.mat"
-    # gt_path = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\Indian_pines_gt.mat"
+    # hsi_path = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\Kennedy_denoise.mat"
+    # gt_path = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\KSC_gt.mat"
+    # hsi = sio.loadmat(hsi_path)['Kennedy176']
+    # gt = sio.loadmat(gt_path)['KSC_gt']
+    hsi_path = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\Pavia.mat"
+    gt_path = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\Pavia_groundtruth.mat"
+    hsi = sio.loadmat(hsi_path)['Pavia']
+    gt = sio.loadmat(gt_path)['groundtruth']
     # hsi_path = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\Indian_pines_corrected.mat"
     # gt_path = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\Indian_pines_gt.mat"
     save_dir = r"C:\Users\LQY\Desktop\TRS-MML\data\datasets\hsi_cls\\"
 
-    hsi = sio.loadmat(hsi_path)['Kennedy176']
-    gt = sio.loadmat(gt_path)['KSC_gt']
     hsi = 1 * ((hsi - np.min(hsi)) / (np.max(hsi) - np.min(hsi)) - 0.5)
     hsi = hsi.transpose([2, 0, 1])
 

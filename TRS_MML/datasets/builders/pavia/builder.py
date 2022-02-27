@@ -1,20 +1,20 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from .dataset import AIDDataset
+from .dataset import PaviaDataset
 from mmf.common.registry import registry
 from mmf.datasets.concat_dataset import MMFConcatDataset
 from mmf.datasets.mmf_dataset_builder import MMFDatasetBuilder
 
 
-@registry.register_builder("aid")
-class AIDBuilder(MMFDatasetBuilder):
+@registry.register_builder("pavia")
+class PaviaBuilder(MMFDatasetBuilder):
     def __init__(self):
         super().__init__(
-            dataset_name="aid", dataset_class=AIDDataset
+            dataset_name="pavia", dataset_class=PaviaDataset
         )
 
     @classmethod
     def config_path(cls):
-        return "TRS_MML/configs/base/datasets/aid/defaults.yaml"
+        return "TRS_MML/configs/base/datasets/pavia/defaults.yaml"
 
     def load(self, config, dataset_type, *args, **kwargs):
         self.config = config

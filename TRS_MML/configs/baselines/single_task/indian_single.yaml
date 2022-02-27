@@ -1,0 +1,48 @@
+model_config:
+  resnet50:
+    base_args:
+      pretrained: false
+    losses:
+    - logit_bce
+
+evaluation:
+  metrics:
+  - type: accuracy
+    key: accuracy
+    datasets:
+    - indian
+
+optimizer:
+  type: adam_w  # HuggingFace transformer's AdamW  # TODO: Ablation EXP
+  params:
+    lr: 1e-5  # TODO: Ablation EXP
+    eps: 1e-8
+    weight_decay: 1e-4
+
+scheduler:
+  type: warmup_constant
+  params:
+    num_warmup_steps: 2000
+
+training:
+  num_workers: 2
+  clip_norm_mode: all
+  clip_gradients: true
+  max_grad_l2_norm: 0.1
+  lr_scheduler: true
+  lr_ratio: 0.1
+  batch_size: 64
+  max_updates: 50000
+  log_interval: 100
+  checkpoint_interval: 10000
+  evaluation_interval: 1000
+  dataset_size_proportional_sampling: false
+  early_stop:
+    enabled: false
+    criteria: indian/accuracy
+    minimize: false
+  stdout_capture: false
+  find_unused_parameters: true
+
+checkpoint:
+  max_to_keep: 5
