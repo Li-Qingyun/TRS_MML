@@ -1,9 +1,9 @@
 model_config:
   resnet50:
     base_args:
-      pretrained: false
-    losses:
-    - logit_bce
+      pretrained: true
+#    losses:
+#    - logit_bce
 
 evaluation:
   metrics:
@@ -13,10 +13,9 @@ evaluation:
     - indian
 
 optimizer:
-  type: adam_w  # HuggingFace transformer's AdamW  # TODO: Ablation EXP
+  type: adam  # HuggingFace transformer's AdamW  # TODO: Ablation EXP
   params:
-    lr: 1e-5  # TODO: Ablation EXP
-    eps: 1e-8
+    lr: 1e-6  # TODO: Ablation EXP
     weight_decay: 1e-4
 
 scheduler:
@@ -32,10 +31,10 @@ training:
   lr_scheduler: true
   lr_ratio: 0.1
   batch_size: 64
-  max_updates: 50000
+  max_updates: 20000
   log_interval: 100
   checkpoint_interval: 10000
-  evaluation_interval: 1000
+  evaluation_interval: 2000
   dataset_size_proportional_sampling: false
   early_stop:
     enabled: false

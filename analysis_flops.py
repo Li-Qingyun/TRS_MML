@@ -110,4 +110,3 @@ if __name__ == "__main__":
 
     print(flop_count_table(flops, max_depth=2, activations=None, show_param_shapes=False))
 
-    from torchvision.models.detection

@@ -7,13 +7,11 @@ Author: Qingyun Li
 __all__ = [
     "dior", "resisc", "aid", "indian", "ksc", "pavia",
     "OpticalRSIProcessor", "HSIProcessor",
-    "trs", "resnet50_baseline",
-    "WarmupConstantScheduler",
-    "RSDetectionMeanAP",
+    "trs", "resnet50_baseline", "vgg16_baseline",
+    "modules"
 ]
 
 from .datasets.builders import dior, resisc, aid, indian, ksc, pavia
 from .datasets.processors import OpticalRSIProcessor, HSIProcessor
-from .models import trs, resnet50_baseline
-from .modules.schedulers import WarmupConstantScheduler
-from .modules.metrics import RSDetectionMeanAP
+from .models import trs, resnet50_baseline, vgg16_baseline
+from TRS_MML.modules import schedulers, optimizers, metrics

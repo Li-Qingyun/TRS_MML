@@ -2,8 +2,8 @@
 Date: 2022.02.02
 Author: Qingyun Li
 """
-__all__ = ["WarmupConstantScheduler",
-           "RSDetectionMeanAP"]
 
-from .schedulers import WarmupConstantScheduler
-from .metrics import RSDetectionMeanAP
+
+import TRS_MML.modules.metrics
+import TRS_MML.modules.schedulers
+import TRS_MML.modules.optimizers

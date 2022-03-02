@@ -1,8 +1,9 @@
 import torch
 import logging
-from torch import nn
+from typing import Dict
+from torch import nn, Tensor
 from mmf.models.unit import UniT
-from .unit_base_model import (
+from mmf.models.unit.unit_base_model import (
     MLP,
     AttributeHead,
     build_detection_loss,
@@ -26,7 +27,7 @@ class TRS(UniT):
 
     def build(self):
         # build the base model (based on DETR)
-        self.unit_base_model = TRSBaseModel(self.config)
+        self.base_model = TRSBaseModel(self.config)
 
         def keep_only_backbone_params(model_state_dict):
             keys = list(model_state_dict.keys())
@@ -45,11 +46,11 @@ class TRS(UniT):
                 base_checkpoint = torch.load(ckpt_path)
             if self.config.base_ckpt_load_backbone_only:
                 keep_only_backbone_params(base_checkpoint["model"])
-                self.unit_base_model.load_state_dict(
+                self.base_model.load_state_dict(
                     base_checkpoint["model"], strict=False
                 )
             else:
-                self.unit_base_model.load_state_dict(
+                self.base_model.load_state_dict(
                     base_checkpoint["model"], strict=True
                 )
 
@@ -121,7 +122,7 @@ class TRS(UniT):
 
         img_src = sample_list.image
 
-        detr_outputs = self.unit_base_model(
+        detr_outputs = self.base_model(
             img_src=img_src,
             task_type=task_type,
             dataset_name=sample_list.dataset_name,
@@ -139,19 +140,57 @@ class TRS(UniT):
             task_type = "hsi_cls"
         return task_type
 
+    def classifier_loss_calculation(self, detr_outputs: Dict[str, Tensor], sample_list):
+        task_type = self.get_task_type(sample_list.dataset_name)
+        hs = detr_outputs["hidden_states"]
+        if not self.config.loss_on_all_hs:
+            hs = detr_outputs["hidden_states"][-1:]
+        num_queries = self.config.base_args.num_queries[task_type][
+            sample_list.dataset_name
+        ]
+        assert hs[0].size(1) == num_queries
+        losses = {}
+        scores = None
+        detr_outputs = {}
+        num_labels = self.config.heads[task_type][sample_list.dataset_name][
+            "num_labels"
+        ]
+
+        for idx, current_hs in enumerate(hs):
+            pooled_output = current_hs[:, -num_queries, :]
+            pooled_output = self.dropout(pooled_output)
+            logits = self.classifiers[task_type][sample_list.dataset_name](
+                pooled_output
+            )
+            reshaped_logits = logits.contiguous().view(-1, num_labels)
+            scores = reshaped_logits
+            # skip loss computation on test set (which usually doesn't contain labels)
+            if sample_list.dataset_type != "test":
+                loss_prefix = f"{sample_list.dataset_type}/{sample_list.dataset_name}/"
+                loss = self.losses_dict[task_type][sample_list.dataset_name](
+                    scores, sample_list.targets
+                )
+                if sample_list.dataset_name == "vqa2":
+                    loss *= sample_list.targets.size(1)
+                losses[loss_prefix + f"loss_{idx}"] = loss
+
+        detr_outputs["scores"] = scores
+        detr_outputs["losses"] = losses
+        return detr_outputs
+
     def get_optimizer_parameters(self, config):
         detr_params = [
             {
                 "params": [
                     p
-                    for n, p in self.unit_base_model.named_parameters()
+                    for n, p in self.base_model.named_parameters()
                     if "backbone" not in n and p.requires_grad
                 ]
             },
             {
                 "params": [
                     p
-                    for n, p in self.unit_base_model.named_parameters()
+                    for n, p in self.base_model.named_parameters()
                     if "backbone" in n and p.requires_grad
                 ],
                 "lr": self.config.base_args.lr_backbone,
