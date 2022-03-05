@@ -1,6 +1,7 @@
 model_config:
   trs:
     base_args:
+      backbone: resnet50
       num_queries:
         hsi_cls:
           indian: 100  # TODO: Ablation EXP
@@ -9,7 +10,7 @@ model_config:
       dilation: true  # TODO: Ablation EXP
       use_task_embedding_in_img_encoder: true
       use_task_embedding_in_lang_encoder: true
-      lr_backbone: 2e-6  # TODO: Ablation EXP
+      lr_backbone: 1e-5  # TODO: Ablation EXP
     losses:
     - logit_bce
     # initialize the ResNet convnet backbone from DETR
@@ -26,7 +27,7 @@ evaluation:
 optimizer:
   type: adam_w  # HuggingFace transformer's AdamW  # TODO: Ablation EXP
   params:
-    lr: 1e-5  # TODO: Ablation EXP
+    lr: 1e-4  # TODO: Ablation EXP
     eps: 1e-8
     weight_decay: 1e-4
 
@@ -42,12 +43,12 @@ training:
   max_grad_l2_norm: 0.1
   lr_scheduler: true
   lr_ratio: 0.1
-  batch_size: 64
-  max_updates: 20000
+  batch_size: 100
+  max_updates: 2000
   log_interval: 100
   log_detailed_config: true
   checkpoint_interval: 10000
-  evaluation_interval: 2000
+  evaluation_interval: 100
   dataset_size_proportional_sampling: false
   early_stop:
     enabled: false

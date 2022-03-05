@@ -74,4 +74,4 @@ python run.py \
 
 For the detailed usage, please refer to [the official website of the mmf](https://mmf.sh/), and [the homepage of UniT project](https://mmf.sh/docs/projects/unit)
 
-For Chinese reader, blogs about mmf will be presented at [CSDN](qingyun.blog.csdn.net) and [my own blog](liqingyun.zone).
+For Chinese reader, blogs about mmf will be presented at [CSDN](https://qingyun.blog.csdn.net/) and [my own blog](https://liqingyun.zone).

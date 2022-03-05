@@ -2,7 +2,8 @@ from typing import Optional
 from torch import Tensor, nn
 from mmf.models.unit.misc import NestedTensor
 from TRS_MML.models.trs.trs_transformer import TRSTransformer
-from mmf.models.unit.backbone import build_unit_convnet_backbone
+# from mmf.models.unit.backbone import build_unit_convnet_backbone
+from TRS_MML.models.components.backbone import build_unit_convnet_backbone
 
 
 class TRSBaseModel(nn.Module):

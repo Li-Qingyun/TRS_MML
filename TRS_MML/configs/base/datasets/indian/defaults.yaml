@@ -26,3 +26,5 @@ dataset_config:
 #          test_image_size: 800
 #          max_size: 640  # 1333
     max_target_enc_size: 65533  # 16382  # maximum number of bytes to encode detection targets into pickle  # ???
+    specific_val_batch_size: True
+    val_batch_size: 100

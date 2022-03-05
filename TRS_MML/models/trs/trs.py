@@ -36,7 +36,7 @@ class TRS(UniT):
                     model_state_dict.pop(k)
 
         ckpt_path = self.config.base_ckpt_path
-        if ckpt_path != "":
+        if ckpt_path != "" and ('resnet50' in self.config.base_args.backbone):
             logger.info(f"initializing base model (UniT) from {ckpt_path}")
             if ckpt_path.startswith("https"):
                 base_checkpoint = torch.hub.load_state_dict_from_url(
