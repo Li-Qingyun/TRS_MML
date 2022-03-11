@@ -1,19 +1,23 @@
 from typing import Optional
 from torch import Tensor, nn
+from omegaconf import DictConfig
 from mmf.models.unit.misc import NestedTensor
-from TRS_MML.models.trs.trs_transformer import TRSTransformer
-# from mmf.models.unit.backbone import build_unit_convnet_backbone
 from TRS_MML.models.components.backbone import build_unit_convnet_backbone
+from TRS_MML.models.trs.trs_transformer import TRSTransformer, TRSDeformableTransformer
 
 
 class TRSBaseModel(nn.Module):
     def __init__(self, config):
         args = config.base_args
+        self.use_deformable_attention = args.use_deformable_attention
+        self.multi_scale = args.multi_scale
+        self.two_stage = args.two_stage
         super().__init__()
 
         self.num_queries = args.num_queries
         self.backbone = build_unit_convnet_backbone(args)
         self.transformer = TRSTransformer(args)
+        # self.transformer = TRSDeformableTransformer(args)
         encoder_hidden_dim = self.transformer.d_model_enc
         decoder_hidden_dim = self.transformer.d_model_dec
 
@@ -26,10 +30,6 @@ class TRSBaseModel(nn.Module):
                 )
             self.query_embeds[task_type] = task_dict
 
-        self.input_proj = nn.Conv2d(
-            self.backbone.num_channels, encoder_hidden_dim, kernel_size=1
-        )
-
         # build the hsi linear projection
         hsi_lin_proj = nn.ModuleDict()
         for dataset_name in args.num_queries.get("hsi_cls", []):
@@ -39,6 +39,7 @@ class TRSBaseModel(nn.Module):
             )
         self.hsi_lin_proj = hsi_lin_proj
 
+
     def forward(
         self,
         img_src: Tensor,
@@ -46,26 +47,62 @@ class TRSBaseModel(nn.Module):
         dataset_name: str = "dior",
         task_idx: Optional[int] = None,
     ):
-        img_mask = None
-        img_pos = [None]
+        all_img_src = [None]
+        all_img_mask = [None]
+        all_img_pos = [None]
+
+        # get configs
+        use_deformable_attention = self.use_deformable_attention[task_type]
+        if not isinstance(use_deformable_attention, bool):
+            use_deformable_attention = use_deformable_attention[dataset_name]
+        multi_scale = self.multi_scale[task_type]
+        if not isinstance(multi_scale, bool):
+            multi_scale = multi_scale[dataset_name]
+        two_stage = self.two_stage[task_type]
+        if not isinstance(two_stage, bool):
+            two_stage = two_stage[dataset_name]
+
+        # Process image sources
         if img_src is not None:
             if not isinstance(img_src, NestedTensor):
                 img_src = NestedTensor.from_tensor_list(img_src)
 
+            # HSI Input Projection
             if task_type == 'hsi_cls':
                 img_src.tensors = self.hsi_lin_proj[dataset_name](img_src.tensors)
 
-            features, img_pos = self.backbone(img_src)
+            # Backbone: ResNet/VGG backbone + Conv Neck (channel mapper) + position embedding
+            features, all_img_pos = self.backbone(img_src)
 
-            img_src, img_mask = features[-1].decompose()
-            img_src = self.input_proj(img_src)
+            # Collate the src, mask, and pos
+            if not multi_scale:
+                all_img_src, all_img_mask = features[-1].decompose()
+                all_img_pos = all_img_pos[-1]
+                if use_deformable_attention:
+                    all_img_src, all_img_mask, all_img_pos = \
+                        [all_img_src], [all_img_mask], [all_img_pos]
+            else:
+                # assert use_deformable_attention
+                all_img_src = []
+                all_img_mask = []
+                for l, feat in enumerate(features):
+                    src, mask = feat.decompose()
+                    all_img_src.append(src)
+                    all_img_mask.append(mask)
 
-        query_embed = self.query_embeds[task_type][dataset_name]
+        # Get query_embed for Decoder
+        if not two_stage:
+            query_embed = self.query_embeds[task_type][dataset_name].weight
+        else:
+            assert use_deformable_attention
+            raise NotImplementedError
+
+        # Transformer
         hs, _ = self.transformer(
-            img_src=img_src,
-            img_mask=img_mask,
-            img_pos=img_pos[-1],
-            query_embed=query_embed.weight,
+            img_src=all_img_src,
+            img_mask=all_img_mask,
+            img_pos=all_img_pos,
+            query_embed=query_embed,
             task_type=task_type,
             dataset_name=dataset_name,
             task_idx=task_idx,

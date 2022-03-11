@@ -6,6 +6,7 @@
 Backbone modules.
 """
 import math
+import logging
 from collections import OrderedDict
 
 import torch
@@ -17,12 +18,14 @@ from torchvision.models._utils import IntermediateLayerGetter
 from torchvision.ops.misc import FrozenBatchNorm2d
 
 
+logger = logging.getLogger(__name__)
+
+
 class BackboneBase(nn.Module):
     def __init__(
         self,
         backbone: nn.Module,
         train_backbone: bool,
-        num_channels: int,
         return_interm_layers: bool,
     ):
         super().__init__()
@@ -36,15 +39,24 @@ class BackboneBase(nn.Module):
                 ):
                     parameter.requires_grad_(False)
             if return_interm_layers:  # TODO: Migrate to the configuration
-                return_layers = {"layer1": "0", "layer2": "1", "layer3": "2", "layer4": "3"}
+                # return_layers = {"layer1": "0", "layer2": "1", "layer3": "2", "layer4": "3"}
+                return_layers = {"layer2": "0", "layer3": "1", "layer4": "2"}
+                if self.name in ['resnet18', 'resnet34']:
+                    self.num_channels = [128, 256, 512]
+                else:
+                    self.num_channels = [512, 1024, 2048]
             else:
                 return_layers = {"layer4": 0}
+                self.num_channels = [512] if self.name in ['resnet18', 'resnet34'] else [2048]
         elif 'vgg' in self.name:
             return_layers = {"features": 0}
+            self.num_channels = [512]
+            assert not return_interm_layers  # Only support single-scale for VGG
         else:
-            raise NotImplementedError("The return_layers requires manual setting.")
+            raise NotImplementedError(
+                f"The return_layers and num_channels of {self.name} requires manual setting."
+            )
         self.body = IntermediateLayerGetter(backbone, return_layers=return_layers)
-        self.num_channels = num_channels
 
     def forward(self, tensor_list: NestedTensor):
         xs = self.body(tensor_list.tensors)
@@ -71,32 +83,36 @@ class Backbone(BackboneBase):
 
         backbone_kwargs = {}
         if 'resnet' in name:
-            num_channels = 512 if name in ["resnet18", "resnet34"] else 2048
             backbone_kwargs['replace_stride_with_dilation'] = [False, False, dilation]
             backbone_kwargs['norm_layer'] = FrozenBatchNorm2d
-        elif 'vgg' in name:
-            num_channels = 512
-        else:
-            raise NotImplementedError("The num_channels requires manual setting.")
         backbone_kwargs['pretrained'] = True
 
         backbone = getattr(torchvision.models, name)(**backbone_kwargs)
 
-        super().__init__(backbone, train_backbone, num_channels, return_interm_layers)
+        if backbone_kwargs['pretrained'] == True :
+            logger.info(f"Loaded imagenet pretrained '{name}' backbone.")
+
+        super().__init__(backbone, train_backbone, return_interm_layers)
 
 
 class Joiner(nn.Sequential):
-    def __init__(self, backbone: nn.Module, position_embedding: nn.Module):
-        super().__init__(backbone, position_embedding)
+    def __init__(self,
+                 backbone: nn.Module,
+                 neck: nn.Module,
+                 position_embedding: nn.Module
+                 ):
+        super().__init__(backbone, neck, position_embedding)
+        self.num_channels = backbone.num_channels
 
     def forward(self, tensor_list: NestedTensor):
         xs = self[0](tensor_list)
+        xs = self[1](xs, tensor_list)
         out = []
         pos = []
         for _, x in xs.items():
             out.append(x)
             # position encoding
-            pos.append(self[1](x).to(x.tensors.dtype))
+            pos.append(self[2](x).to(x.tensors.dtype))
 
         return out, pos
 
@@ -146,15 +162,74 @@ class PositionEmbeddingSine(nn.Module):
         return pos
 
 
+class Neck(nn.Module):
+    def __init__(self, in_channels, out_channels, num_feature_levels = 1):
+        super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.num_feature_levels = num_feature_levels
+
+        if num_feature_levels > 1:
+            num_backbone_outs = len(in_channels)
+            input_proj_list = []
+            for _ in range(num_backbone_outs):
+                input_proj_list.append(nn.Sequential(
+                    nn.Conv2d(in_channels[_], out_channels, kernel_size=1),
+                    nn.GroupNorm(32, out_channels),
+                ))
+            for _ in range(num_feature_levels - num_backbone_outs):
+                input_proj_list.append(nn.Sequential(
+                    nn.Conv2d(in_channels[-1], out_channels, kernel_size=3, stride=2, padding=1),
+                    nn.GroupNorm(32, out_channels),
+                ))
+            self.input_proj = nn.ModuleList(input_proj_list)
+        else:
+            self.input_proj = nn.ModuleList([
+                nn.Sequential(
+                    nn.Conv2d(in_channels[-1], out_channels, kernel_size=1),
+                    nn.GroupNorm(32, out_channels),
+            )])
+
+        for proj in self.input_proj:
+            nn.init.xavier_uniform_(proj[0].weight, gain=1)
+            nn.init.constant_(proj[0].bias, 0)
+
+    def forward(self, in_features: OrderedDict, tensor_list = None):
+        out = OrderedDict()
+        for l, (name, feat) in enumerate(in_features.items()):
+            src, mask = feat.decompose()
+            src = self.input_proj[l](src)
+            out[name] = NestedTensor(src, mask)
+        if self.num_feature_levels > len(in_features):
+            _len_in_features = len(in_features)
+            for l in range(_len_in_features, self.num_feature_levels):
+                if l == _len_in_features:
+                    src = self.input_proj[l](in_features[next(reversed(in_features))].tensors)
+                else:
+                    src = self.input_proj[l](out[next(reversed(out))].tensors)
+                if tensor_list is not None:
+                    mask = F.interpolate(
+                        tensor_list.mask[None].float(), size=src.shape[-2:]
+                    ).to(torch.bool)[0]
+                else:
+                    mask = F.interpolate(
+                        out[next(reversed(out))].mask.float(), size=src.shape[-2:]
+                    ).to(torch.bool)[0]
+                out[f'{l}'] = NestedTensor(src, mask)
+        return out
+
+
 def build_unit_convnet_backbone(args):
     position_embedding = PositionEmbeddingSine(
         args.encoder_hidden_dim // 2, normalize=True
     )
     train_backbone = args.lr_backbone > 0
-    return_interm_layers = False
+    return_interm_layers = args.num_feature_levels > 1
     backbone = Backbone(
         args.backbone, train_backbone, return_interm_layers, args.dilation
     )
-    model = Joiner(backbone, position_embedding)
-    model.num_channels = backbone.num_channels
+    neck = Neck(
+        backbone.num_channels, args.decoder_hidden_dim, args.num_feature_levels
+    )
+    model = Joiner(backbone, neck, position_embedding)
     return model

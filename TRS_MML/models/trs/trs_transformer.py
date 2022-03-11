@@ -2,6 +2,10 @@ import torch
 from typing import Optional
 from torch import nn, Tensor
 from mmf.models.unit.transformer import Transformer, TransformerDecoder, TransformerDecoderLayer
+from mmdet.models.utils.transformer import DeformableDetrTransformer
+from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
+                                         TransformerLayerSequence,
+                                         build_transformer_layer_sequence)
 
 
 class TRSTransformer(Transformer):
@@ -144,3 +148,111 @@ class TRSTransformer(Transformer):
         img_pos = torch.cat([img_pos_pad, img_pos], dim=0)
 
         return img_src, img_mask, img_pos
+
+
+class TRSDeformableTransformer(nn.Module):
+    """
+    Modified from the implementation of DeformableDetrTransformer by mmdetection
+    """
+    def __init__(self, args):
+        super().__init__()
+
+        self.args = args  # TODO
+        self.d_model_enc = args.encoder_hidden_dim
+        self.d_model_dec = args.decoder_hidden_dim
+        self.dropout = args.dropout
+        self.nhead = args.nheads
+        self.dim_feedforward = args.dim_feedforward
+        self.num_encoder_layers = args.enc_layers
+        self.num_decoder_layers = args.dec_layers
+        self.normalize_before = args.pre_norm  # TODO
+        self.return_intermediate_dec = True  # TODO
+        self.pass_pos_and_query = args.pass_pos_and_query  # TODO
+        self.share_decoders = args.share_decoders  # TODO
+        self.activation = "relu"  # TODO
+
+        configdict = self.build_configdict(**args)
+
+        self.encoder = build_transformer_layer_sequence(configdict.encoder)
+
+        if self.d_model_dec != self.d_model_enc:
+            self.enc2dec_proj = nn.Linear(self.d_model_enc, self.d_model_dec)
+            self.pos_embed_proj = nn.Linear(self.d_model_enc, self.d_model_dec)
+        else:
+            self.enc2dec_proj = nn.Identity()
+            self.pos_embed_proj = nn.Identity()
+
+        self.decoders = nn.ModuleDict()
+        num_queries = self.args.num_queries
+        for task in num_queries:
+            task_dict = nn.ModuleDict()
+            for dataset in num_queries[task]:
+                task_dict[dataset] = build_transformer_layer_sequence(configdict.decoder)
+            self.decoders[task] = task_dict
+            # A separate decoder for VQA
+
+        MAX_TASK_NUM = 256
+        if args.use_task_embedding_in_img_encoder:
+            self.task_embeddings_enc = nn.Embedding(MAX_TASK_NUM, self.d_model_enc)
+        # when adding the task embedding to the beginning of the decoder, we'll strip
+        # it from the hidden state outputs to make it compatible with previous models
+        self.mem_out_begin_idx = 1 if args.use_task_embedding_in_img_encoder else 0
+
+        self.as_two_stage = args.get("as_two_stage", False)  # TODO
+        self.num_feature_levels = args.get("num_feature_levels", 4)  # TODO
+        self.two_stage_num_proposals = args.get("two_stage_num_proposals", 300)  # TODO
+
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+        for p in self.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+
+    def forward(
+            self,
+            img_src: Optional[Tensor] = None,
+            img_mask: Optional[Tensor] = None,
+            img_pos: Optional[Tensor] = None,
+            query_embed: Optional[Tensor] = None,
+            task_type: Optional[str] = None,
+            dataset_name: Optional[str] = None,
+            task_idx: Optional[int] = None,
+    ):
+        pass
+
+    def build_configdict(self, **args):
+        from mmcv.utils import ConfigDict
+        config = ConfigDict(
+            dict(
+                encoder=dict(
+                    type='DetrTransformerEncoder',
+                    num_layers=self.num_encoder_layers,
+                    transformerlayers=dict(
+                        type='BaseTransformerLayer',
+                        attn_cfgs=dict(
+                            type='MultiScaleDeformableAttention', embed_dims=self.d_model_enc),
+                        feedforward_channels=self.dim_feedforward,
+                        ffn_dropout=self.dropout,
+                        operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
+                decoder=dict(
+                    type='DeformableDetrTransformerDecoder',
+                    num_layers=self.num_decoder_layers,
+                    return_intermediate=True,
+                    transformerlayers=dict(
+                        type='DetrTransformerDecoderLayer',
+                        attn_cfgs=[
+                            dict(
+                                type='MultiheadAttention',
+                                embed_dims=self.d_model_dec,
+                                num_heads=self.nhead,
+                                dropout=self.dropout),
+                            dict(
+                                type='MultiScaleDeformableAttention',
+                                embed_dims=self.d_model_enc)
+                        ],
+                        feedforward_channels=self.dim_feedforward,
+                        ffn_dropout=self.dropout,
+                        operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
+                                         'ffn', 'norm')))))
+        return config

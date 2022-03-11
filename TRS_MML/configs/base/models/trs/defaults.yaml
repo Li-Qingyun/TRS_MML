@@ -4,17 +4,6 @@ model_config:
     base_ckpt_load_backbone_only: false
     detection_loss_weight: 1.
 
-    keep_only_bert_cls:
-      # whether to keep only the [CLS] token's hidden states in transformer
-      vl:
-        vqa2: false
-        hateful_memes: true
-        visual_entailment: true
-      glue:
-        glue_qnli: true
-        glue_sst2: true
-        glue_mnli_mismatched: true
-        glue_qqp: true
     loss_on_all_hs: false
 
     base_args:
@@ -43,6 +32,21 @@ model_config:
       giou_loss_coef: 2.
       attr_loss_coef: 1.
       eos_coef: 0.1
+      # configs of multi-scale feature
+      multi_scale:
+        detection: true
+        hri_cls: false
+        hsi_cls: false
+      num_feature_levels: 1
+      # configs of deformable transformer encoder
+      use_deformable_attention:
+        detection: true
+        hri_cls: false
+        hsi_cls: false
+      two_stage:
+        detection: true
+        hri_cls: false
+        hsi_cls: false
       # separate dimensionality for decoder
       decoder_hidden_dim: 256
       num_queries: {}
@@ -53,7 +57,7 @@ model_config:
       # Visual Genome attribute data properties
       attribute_class_num: 401
       max_attribute_num: 16
-      dropout_config: 0.1
+      dropout_config: 0.1  # config for dropout out of the Transformer
 
     heads:
       detection:
