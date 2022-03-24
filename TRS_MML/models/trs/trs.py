@@ -29,30 +29,30 @@ class TRS(UniT):
         # build the base model (based on DETR)
         self.base_model = TRSBaseModel(self.config)
 
-        def keep_only_backbone_params(model_state_dict):
-            keys = list(model_state_dict.keys())
-            for k in keys:
-                if "backbone" not in k:
-                    model_state_dict.pop(k)
-
-        ckpt_path = self.config.base_ckpt_path
-        if ckpt_path != "" and ('resnet50' in self.config.base_args.backbone):
-            logger.info(f"initializing base model (UniT) from {ckpt_path}")
-            if ckpt_path.startswith("https"):
-                base_checkpoint = torch.hub.load_state_dict_from_url(
-                    ckpt_path, check_hash=True
-                )
-            else:
-                base_checkpoint = torch.load(ckpt_path)
-            if self.config.base_ckpt_load_backbone_only:
-                keep_only_backbone_params(base_checkpoint["model"])
-                self.base_model.load_state_dict(
-                    base_checkpoint["model"], strict=False
-                )
-            else:
-                self.base_model.load_state_dict(
-                    base_checkpoint["model"], strict=True
-                )
+        # def keep_only_backbone_params(model_state_dict):
+        #     keys = list(model_state_dict.keys())
+        #     for k in keys:
+        #         if "backbone" not in k:
+        #             model_state_dict.pop(k)
+        #
+        # ckpt_path = self.config.base_ckpt_path
+        # if ckpt_path != "" and ('resnet50' in self.config.base_args.backbone):
+        #     logger.info(f"initializing base model (UniT) from {ckpt_path}")
+        #     if ckpt_path.startswith("https"):
+        #         base_checkpoint = torch.hub.load_state_dict_from_url(
+        #             ckpt_path, check_hash=True
+        #         )
+        #     else:
+        #         base_checkpoint = torch.load(ckpt_path)
+        #     if self.config.base_ckpt_load_backbone_only:
+        #         keep_only_backbone_params(base_checkpoint["model"])
+        #         self.base_model.load_state_dict(
+        #             base_checkpoint["model"], strict=False
+        #         )
+        #     else:
+        #         self.base_model.load_state_dict(
+        #             base_checkpoint["model"], strict=True
+        #         )
 
         # build the task-specific output heads for Object Detection on Optical RSI
         self.class_embeds = nn.ModuleDict()

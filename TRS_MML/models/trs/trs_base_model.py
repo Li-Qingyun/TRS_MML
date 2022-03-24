@@ -3,21 +3,22 @@ from torch import Tensor, nn
 from omegaconf import DictConfig
 from mmf.models.unit.misc import NestedTensor
 from TRS_MML.models.components.backbone import build_unit_convnet_backbone
-from TRS_MML.models.trs.trs_transformer import TRSTransformer, TRSDeformableTransformer
+from TRS_MML.models.trs.trs_transformer import TRSTransformer
 
 
 class TRSBaseModel(nn.Module):
     def __init__(self, config):
         args = config.base_args
-        self.use_deformable_attention = args.use_deformable_attention
+        self.encoder_use_deformable_attention = args.encoder_use_deformable_attention
+        self.decoder_use_deformable_attention = args.decoder_use_deformable_attention
         self.multi_scale = args.multi_scale
         self.two_stage = args.two_stage
+        self.with_box_refine = False  # TODO: for temp setting
         super().__init__()
 
         self.num_queries = args.num_queries
         self.backbone = build_unit_convnet_backbone(args)
         self.transformer = TRSTransformer(args)
-        # self.transformer = TRSDeformableTransformer(args)
         encoder_hidden_dim = self.transformer.d_model_enc
         decoder_hidden_dim = self.transformer.d_model_dec
 
@@ -26,9 +27,14 @@ class TRSBaseModel(nn.Module):
             task_dict = nn.ModuleDict()
             for dataset in self.num_queries[task_type]:
                 task_dict[dataset] = nn.Embedding(
-                    self.num_queries[task_type][dataset], decoder_hidden_dim
+                    self.num_queries[task_type][dataset],
+                    decoder_hidden_dim*2  # A modification that caters to Deformable
                 )
             self.query_embeds[task_type] = task_dict
+
+        # build cls_branches and reg_branches
+        self.reg_branches = None  # TODO: for temp setting
+        self.cls_branches = None
 
         # build the hsi linear projection
         hsi_lin_proj = nn.ModuleDict()
@@ -52,15 +58,26 @@ class TRSBaseModel(nn.Module):
         all_img_pos = [None]
 
         # get configs
-        use_deformable_attention = self.use_deformable_attention[task_type]
-        if not isinstance(use_deformable_attention, bool):
-            use_deformable_attention = use_deformable_attention[dataset_name]
+        encoder_use_deformable_attention = self.encoder_use_deformable_attention[task_type]
+        if not isinstance(encoder_use_deformable_attention, bool):
+            encoder_use_deformable_attention = encoder_use_deformable_attention[dataset_name]
+        decoder_use_deformable_attention = self.decoder_use_deformable_attention[task_type]
+        if not isinstance(decoder_use_deformable_attention, bool):
+            decoder_use_deformable_attention = decoder_use_deformable_attention[dataset_name]
         multi_scale = self.multi_scale[task_type]
         if not isinstance(multi_scale, bool):
             multi_scale = multi_scale[dataset_name]
         two_stage = self.two_stage[task_type]
         if not isinstance(two_stage, bool):
             two_stage = two_stage[dataset_name]
+        with_box_refine = self.with_box_refine
+        kwargs = {
+            'encoder_use_deformable_attention': encoder_use_deformable_attention,
+            'decoder_use_deformable_attention': decoder_use_deformable_attention,
+            'multi_scale': multi_scale,
+            'two_stage': two_stage,
+            'with_box_refine': with_box_refine,
+        }
 
         # Process image sources
         if img_src is not None:
@@ -75,37 +92,32 @@ class TRSBaseModel(nn.Module):
             features, all_img_pos = self.backbone(img_src)
 
             # Collate the src, mask, and pos
-            if not multi_scale:
-                all_img_src, all_img_mask = features[-1].decompose()
-                all_img_pos = all_img_pos[-1]
-                if use_deformable_attention:
-                    all_img_src, all_img_mask, all_img_pos = \
-                        [all_img_src], [all_img_mask], [all_img_pos]
-            else:
-                # assert use_deformable_attention
-                all_img_src = []
-                all_img_mask = []
-                for l, feat in enumerate(features):
-                    src, mask = feat.decompose()
-                    all_img_src.append(src)
-                    all_img_mask.append(mask)
+            all_img_src = []
+            all_img_mask = []
+            for l, feat in enumerate(features):
+                src, mask = feat.decompose()
+                all_img_src.append(src)
+                all_img_mask.append(mask)
 
         # Get query_embed for Decoder
         if not two_stage:
             query_embed = self.query_embeds[task_type][dataset_name].weight
         else:
-            assert use_deformable_attention
-            raise NotImplementedError
+            assert encoder_use_deformable_attention
+            query_embed = None
 
         # Transformer
         hs, _ = self.transformer(
-            img_src=all_img_src,
-            img_mask=all_img_mask,
-            img_pos=all_img_pos,
+            all_img_src=all_img_src,
+            all_img_mask=all_img_mask,
+            all_img_pos=all_img_pos,
             query_embed=query_embed,
+            reg_branches=self.reg_branches if with_box_refine else None,  # noqa:E501
+            cls_branches=self.cls_branches if two_stage else None,  # noqa:E501
             task_type=task_type,
             dataset_name=dataset_name,
             task_idx=task_idx,
+            **kwargs,
         )
 
         if hs is not None:

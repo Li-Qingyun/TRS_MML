@@ -168,16 +168,19 @@ class Neck(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.num_feature_levels = num_feature_levels
+        num_backbone_outs = len(in_channels)
+        self.num_backbone_outs = num_backbone_outs
 
         if num_feature_levels > 1:
-            num_backbone_outs = len(in_channels)
             input_proj_list = []
-            for _ in range(num_backbone_outs):
+            for i in range(min(num_feature_levels, num_backbone_outs)):
                 input_proj_list.append(nn.Sequential(
-                    nn.Conv2d(in_channels[_], out_channels, kernel_size=1),
+                    nn.Conv2d(
+                        in_channels[max(num_backbone_outs - num_feature_levels, 0) + i],
+                        out_channels, kernel_size=1),
                     nn.GroupNorm(32, out_channels),
                 ))
-            for _ in range(num_feature_levels - num_backbone_outs):
+            for i in range(num_feature_levels - num_backbone_outs):
                 input_proj_list.append(nn.Sequential(
                     nn.Conv2d(in_channels[-1], out_channels, kernel_size=3, stride=2, padding=1),
                     nn.GroupNorm(32, out_channels),
@@ -196,10 +199,13 @@ class Neck(nn.Module):
 
     def forward(self, in_features: OrderedDict, tensor_list = None):
         out = OrderedDict()
+        assert self.num_backbone_outs == len(in_features)
         for l, (name, feat) in enumerate(in_features.items()):
-            src, mask = feat.decompose()
-            src = self.input_proj[l](src)
-            out[name] = NestedTensor(src, mask)
+            proj_index = l - max(self.num_backbone_outs - self.num_feature_levels, 0)
+            if proj_index >= 0:
+                src, mask = feat.decompose()
+                src = self.input_proj[proj_index](src)
+                out[name] = NestedTensor(src, mask)
         if self.num_feature_levels > len(in_features):
             _len_in_features = len(in_features)
             for l in range(_len_in_features, self.num_feature_levels):

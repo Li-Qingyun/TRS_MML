@@ -5,7 +5,7 @@ model_config:
         detection:
           dior: 300
       share_decoders: false
-      decoder_hidden_dim: 768
+      decoder_hidden_dim: 256  #768
       dilation: true
       use_task_embedding_in_img_encoder: true
       use_task_embedding_in_lang_encoder: true

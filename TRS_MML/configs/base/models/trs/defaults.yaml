@@ -39,14 +39,19 @@ model_config:
         hsi_cls: false
       num_feature_levels: 1
       # configs of deformable transformer encoder
-      use_deformable_attention:
+      encoder_use_deformable_attention:
+        detection: true
+        hri_cls: false
+        hsi_cls: false
+      decoder_use_deformable_attention:
         detection: true
         hri_cls: false
         hsi_cls: false
       two_stage:
-        detection: true
+        detection: false  # ture
         hri_cls: false
         hsi_cls: false
+      two_stage_num_proposals: 100
       # separate dimensionality for decoder
       decoder_hidden_dim: 256
       num_queries: {}
