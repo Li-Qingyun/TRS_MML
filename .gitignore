@@ -1,3 +1,9 @@
 # Created by .ignore support plugin (hsz.mobi)
 /data/
 /.idea/
+/TRS_MML/models/trs/ops/MultiScaleDeformableAttention.egg-info/
+/TRS_MML/models/trs/ops/dist/
+/TRS_MML/models/trs/ops/build/
+/TRS_MML/models/deformable_unit/ops/dist/
+/TRS_MML/models/deformable_unit/ops/MultiScaleDeformableAttention.egg-info/
+/TRS_MML/models/deformable_unit/ops/build/

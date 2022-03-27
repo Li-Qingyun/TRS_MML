@@ -1,11 +1,11 @@
 model_config:
-  trs:
+  deformable_trs:
     base_ckpt_path: ''  # the initial DETR parameters to start from (this should be a checkpoint file trained w/ DETR package)
     base_ckpt_load_backbone_only: false
     detection_loss_weight: 1.
 
     loss_on_all_hs: false
-defaults
+
     base_args:
       lr_backbone: 1e-4
       backbone: resnet50
@@ -63,6 +63,7 @@ defaults
       attribute_class_num: 401
       max_attribute_num: 16
       dropout_config: 0.1  # config for dropout out of the Transformer
+      focal_alpha: 0.25
 
     heads:
       detection:

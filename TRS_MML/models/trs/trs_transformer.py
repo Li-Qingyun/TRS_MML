@@ -309,16 +309,16 @@ class TRSTransformer(nn.Module):
             init_reference_out = reference_points
 
         if self.mem_out_begin_idx != 0:  # TODO:???
-            all_img_src = all_img_src[self.mem_out_begin_idx :]
-            all_img_pos = all_img_pos[self.mem_out_begin_idx :]
-            all_img_mask = all_img_mask[:, self.mem_out_begin_idx :]
+            all_src_flatten = all_src_flatten[self.mem_out_begin_idx :]
+            all_pos_embed_flatten = all_pos_embed_flatten[self.mem_out_begin_idx :]
+            all_mask_flatten = all_mask_flatten[:, self.mem_out_begin_idx :]
             memory = memory[self.mem_out_begin_idx :]
 
         if self.args.residual_in_encoder:    # TODO:???
-            memory = all_img_src + memory
+            memory = all_src_flatten + memory
 
         memory = self.enc2dec_proj(memory)
-        all_img_pos = self.pos_embed_proj(all_img_pos)
+        all_pos_embed_flatten = self.pos_embed_proj(all_pos_embed_flatten)
 
         memories.append(memory)
         pos_embeds.append(all_pos_embed_flatten)
