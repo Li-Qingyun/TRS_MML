@@ -6,11 +6,10 @@ model_config:
           dior: 300
       share_decoders: false
       decoder_hidden_dim: 256  #768
-      dilation: true
+      dilation: false  # true
       use_task_embedding_in_img_encoder: true
       use_task_embedding_in_lang_encoder: true
-      lr_backbone: 2e-7
-#      lr_backbone: 2e-6
+
     losses:
     - logit_bce
     # initialize the ResNet convnet backbone from DETR
@@ -32,7 +31,7 @@ evaluation:
 optimizer:
   type: adam_w  # HuggingFace transformer's AdamW
   params:
-    lr: 1e-6
+    lr: 1e-4
 #    lr: 1e-5
     eps: 1e-8
     weight_decay: 1e-4
@@ -51,8 +50,9 @@ training:
   max_grad_l2_norm: 0.1
   lr_scheduler: true
   lr_ratio: 0.1
-  batch_size: 64
-  max_updates: 1800000
+  lr_steps: [200000]
+  batch_size: 1
+  max_updates: 250000
   checkpoint_interval: 10000
   evaluation_interval: 10000
   dataset_size_proportional_sampling: false
@@ -62,6 +62,13 @@ training:
     minimize: false
   stdout_capture: false
   find_unused_parameters: true
+  tensorboard: True
+#  callbacks:
+#  - type: grad_clip
+#    params:
+#      enabled: false
+#      max_norm: 0.1
+#      norm_type: 2
 
 checkpoint:
   max_to_keep: 5

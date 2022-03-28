@@ -29,6 +29,13 @@ class DTRS(UniT):
         return "TRS_MML/configs/base/models/trs/develop.yaml"
 
     def build(self):
+        self.two_stage = True  # TODO: ADD API
+        self.with_box_refine = True  # TODO: ADD API
+        two_stage = self.two_stage  # TODO: ADD API
+        with_box_refine = self.with_box_refine  # TODO: ADD API
+        self.config.base_args.two_stage = self.two_stage  # TODO: ADD API
+        self.config.base_args.with_box_refine = self.with_box_refine  # TODO: ADD API
+
         # build the base model (based on DETR)
         self.base_model = UniTBaseModel(self.config.base_args)
 
@@ -64,11 +71,6 @@ class DTRS(UniT):
 
         detr_hidden_dim = self.config.base_args.decoder_hidden_dim
         detr_num_layers = self.config.base_args.dec_layers
-
-        self.two_stage = False
-        self.with_box_refine = False
-        two_stage = False  # TODO: ADD API
-        with_box_refine = False  # TODO: ADD API
 
         def _get_clones(module, N):
             return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
@@ -204,13 +206,14 @@ class DTRS(UniT):
             }
         )
 
-        if self.two_stage:
-            enc_outputs_coord_unact = detr_outputs['enc_outputs_coord_unact']
-            enc_outputs_coord = enc_outputs_coord_unact.sigmoid()
-            out['enc_outputs'] = {'pred_logits': enc_outputs_class, 'pred_boxes': enc_outputs_coord}
-
         # skip loss computation on test set (which usually doesn't contain labels)
         if sample_list.dataset_type != "test":
+            if self.two_stage:
+                enc_outputs_coord_unact = detr_outputs['enc_outputs_coord_unact']
+                enc_outputs_class = detr_outputs['enc_outputs_class']
+                enc_outputs_coord = enc_outputs_coord_unact.sigmoid()
+                detr_outputs['enc_outputs'] = {'pred_logits': enc_outputs_class, 'pred_boxes': enc_outputs_coord}
+
             if self.config.base_args.aux_loss:
                 detr_outputs["aux_outputs"] = [
                     {"pred_logits": a, "pred_boxes": b}
@@ -274,29 +277,47 @@ class DTRS(UniT):
         return detr_outputs
 
     def get_optimizer_parameters(self, config):
+        backbone_params = []
+        sampling_offsets_params = []
+        reference_points_params = []
+        transformers_params = []
+        for n, p in self.base_model.named_parameters():
+            if p.requires_grad:
+                if "backbone" in n :
+                    backbone_params.append(p)
+                elif "sampling_offsets" in n :
+                    sampling_offsets_params.append(p)
+                elif "reference_points" in n :
+                    reference_points_params.append(p)
+                else:
+                    transformers_params.append(p)
+
         detr_params = [
             {
-                "params": [
-                    p
-                    for n, p in self.base_model.named_parameters()
-                    if "backbone" not in n and p.requires_grad
-                ]
+                "params": transformers_params
             },
             {
-                "params": [
-                    p
-                    for n, p in self.base_model.named_parameters()
-                    if "backbone" in n and p.requires_grad
-                ],
-                "lr": self.config.base_args.lr_backbone,
+                "params": backbone_params,
+                "lr_mult": self.config.base_args.lr_mult.backbone,
+            },
+            {
+                "params": sampling_offsets_params,
+                "lr_mult": self.config.base_args.lr_mult.sampling_offsets,
+            },
+            {
+                "params": reference_points_params,
+                "lr_mult": self.config.base_args.lr_mult.reference_points,
             },
         ]
 
         other_params = [
             {"params": self.classifiers.parameters()},
-            {"params": self.class_embeds.parameters()},
-            {"params": self.bbox_embeds.parameters()},
             {"params": self.det_losses.parameters()},
         ]
+
+        if not self.with_box_refine:
+            other_params.append({"params": self.bbox_embeds.parameters()})
+        if not self.two_stage:
+            other_params.append({"params": self.class_embeds.parameters()})
 
         return detr_params + other_params

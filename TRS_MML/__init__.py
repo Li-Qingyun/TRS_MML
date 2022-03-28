@@ -8,7 +8,7 @@ __all__ = [
     "dior", "resisc", "aid", "indian", "ksc", "pavia",
     "OpticalRSIProcessor", "HSIProcessor",
     "trs", "resnet50_baseline", "vgg16_baseline", "deformable_unit",
-    "modules"
+    "modules",
 ]
 
 from .datasets.builders import dior, resisc, aid, indian, ksc, pavia

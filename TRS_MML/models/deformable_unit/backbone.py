@@ -144,7 +144,7 @@ def build_unit_convnet_backbone(args):
     position_embedding = PositionEmbeddingSine(
         args.encoder_hidden_dim // 2, normalize=True
     )
-    train_backbone = args.lr_backbone > 0
+    train_backbone = args.lr_mult.backbone > 0
     return_interm_layers = args.num_feature_levels > 1
     backbone = Backbone(
         args.backbone, train_backbone, return_interm_layers, args.dilation

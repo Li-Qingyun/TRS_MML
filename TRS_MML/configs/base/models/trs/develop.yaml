@@ -4,16 +4,19 @@ model_config:
     base_ckpt_load_backbone_only: false
     detection_loss_weight: 1.
 
-    loss_on_all_hs: false
+    loss_on_all_hs: false  # for cls only
 
     base_args:
-      lr_backbone: 1e-4
+      lr_mult:
+        backbone: 0.1
+        sampling_offsets: 0.1
+        reference_points: 0.1
       backbone: resnet50
       dilation: false
       position_embedding: sine
       enc_layers: 6
       dec_layers: 6
-      dim_feedforward: 2048
+      dim_feedforward: 1024  # 2048
       encoder_hidden_dim: 256
       dropout: 0.1
       nheads: 8
@@ -23,15 +26,13 @@ model_config:
       # detection losses
       aux_loss: true
       use_bcl: false
-      set_cost_class: 1.
+      set_cost_class: 2.
       set_cost_bbox: 5.
       set_cost_giou: 2.
-      mask_loss_coef: 1.
-      dice_loss_coef: 1.
+      cls_loss_coef: 2.
       bbox_loss_coef: 5.
       giou_loss_coef: 2.
-      attr_loss_coef: 1.
-      eos_coef: 0.1
+      eos_coef: 0.1  # TODO： ？？？
       # configs of multi-scale feature
       multi_scale:
         detection: true
@@ -47,10 +48,8 @@ model_config:
         detection: true
         hri_cls: false
         hsi_cls: false
-      two_stage:
-        detection: false  # ture
-        hri_cls: false
-        hsi_cls: false
+      two_stage: True
+      with_box_refine: True
       two_stage_num_proposals: 100
       # separate dimensionality for decoder
       decoder_hidden_dim: 256

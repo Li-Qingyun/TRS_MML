@@ -2,6 +2,7 @@
 
 # Mostly copy-pasted from
 # https://github.com/facebookresearch/detr/blob/master/models/detr.py
+import copy
 from typing import Optional
 
 import torch
@@ -23,7 +24,8 @@ class UniTBaseModel(nn.Module):
         self.num_queries = args.num_queries
         encoder_hidden_dim = args.encoder_hidden_dim
         decoder_hidden_dim = args.decoder_hidden_dim
-        self.two_stage = False  # TODO: ADD API
+        self.two_stage = args.two_stage  # TODO: ADD API
+        self.with_box_refine = args.with_box_refine  # TODO: ADD API
         assert encoder_hidden_dim == decoder_hidden_dim  # TODO:  hebing
         hidden_dim = encoder_hidden_dim
         self.backbone = build_unit_convnet_backbone(args)
@@ -178,7 +180,7 @@ class SetCriterion(nn.Module):
 
         idx = self._get_src_permutation_idx(indices)
         target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
-        target_classes = torch.full(src_logits.shape[:2], self.num_classes,
+        target_classes = torch.full(src_logits.shape[:2], self.num_classes + 1,  # num_classes
                                     dtype=torch.int64, device=src_logits.device)
         target_classes[idx] = target_classes_o
 
@@ -317,7 +319,7 @@ def build_detection_loss(args, num_classes):
         cost_giou=args.set_cost_giou,
         activation="logsoftmax" if args.use_bcl else "softmax",  # TODO: actibation may
     )
-    weight_dict = {"loss_ce": 1, "loss_bbox": args.bbox_loss_coef}
+    weight_dict = {"loss_ce": args.cls_loss_coef, "loss_bbox": args.bbox_loss_coef}
     weight_dict["loss_giou"] = args.giou_loss_coef
     if args.aux_loss:
         aux_weight_dict = {}

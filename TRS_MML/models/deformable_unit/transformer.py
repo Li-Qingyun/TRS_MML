@@ -2,6 +2,7 @@
 
 # Mostly copy-pasted from
 # https://github.com/facebookresearch/detr/blob/master/models/transformer.py
+import math
 import copy
 from typing import Optional
 
