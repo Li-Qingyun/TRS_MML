@@ -479,6 +479,7 @@ class TRSDeformableBuilder:
         self.share_decoders = args.share_decoders  # TODO
         self.activation = "relu"  # TODO
         self.num_feature_levels = args.num_feature_levels
+        self.as_two_stage = args.two_stage
 
         self.configdict = self.build_configdict(**args)
 
@@ -489,7 +490,12 @@ class TRSDeformableBuilder:
         return build_transformer_layer_sequence(self.configdict.decoder)
 
     def build_transformer(self):
-        return DeformableDetrTransformer(**self.configdict)
+        return DeformableDetrTransformer(
+            as_two_stage=self.as_two_stage,
+            num_feature_levels=self.num_feature_levels,
+            two_stage_num_proposals=300,
+            **self.configdict
+        )
 
     def build_configdict(self, **args):
         from mmcv.utils import ConfigDict

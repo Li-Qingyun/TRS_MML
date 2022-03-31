@@ -1,5 +1,5 @@
 model_config:
-  deformable_trs:
+  deformable_trs_mmdet:
     base_args:
       num_queries:
         detection:
@@ -10,8 +10,6 @@ model_config:
       use_task_embedding_in_img_encoder: true
       use_task_embedding_in_lang_encoder: true
       num_feature_levels: 4
-      two_stage: true
-      with_box_refine: true
 
     losses:
     - logit_bce
@@ -34,7 +32,7 @@ evaluation:
 optimizer:
   type: adam_w  # HuggingFace transformer's AdamW
   params:
-    lr: 1e-4
+    lr: 1e-5
 #    lr: 1e-5
     eps: 1e-8
     weight_decay: 1e-4

@@ -13,5 +13,5 @@ __all__ = [
 
 from .datasets.builders import dior, resisc, aid, indian, ksc, pavia
 from .datasets.processors import OpticalRSIProcessor, HSIProcessor
-from .models import trs, resnet50_baseline, vgg16_baseline, deformable_unit
+from .models import trs, resnet50_baseline, vgg16_baseline, deformable_unit, deformable_unit_mmdet
 from TRS_MML.modules import schedulers, optimizers, metrics
