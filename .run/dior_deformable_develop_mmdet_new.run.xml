@@ -1,0 +1,24 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="dior_deformable_develop_mmdet_new" type="PythonConfigurationType" factoryName="Python" folderName="develop">
+    <module name="TRS_MML" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
+    </envs>
+    <option name="SDK_HOME" value="" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="IS_MODULE_SDK" value="true" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run.py" />
+    <option name="PARAMETERS" value="config=TRS_MML/configs/develop/dior_single_mmdet.yaml dataset=dior model=deformable_trs_mmdet run_type=train env.save_dir=./save/dior_develop env.data_dir=$PROJECT_DIR$/.. training.batch_size=1 training.evaluation_interval=5000 training.checkpoint_interval=5000 training.log_interval=200 training.max_updates=250000 training.seed=2022 model_config.deformable_trs_mmdet.base_args.num_feature_levels=4" />
+    <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="EMULATE_TERMINAL" value="false" />
+    <option name="MODULE_MODE" value="false" />
+    <option name="REDIRECT_INPUT" value="false" />
+    <option name="INPUT_FILE" value="" />
+    <method v="2" />
+  </configuration>
+</component>
